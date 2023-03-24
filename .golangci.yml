@@ -1,0 +1,39 @@
+output:
+  format: line-number
+
+linters:
+  disable-all: true
+  enable:
+    - contextcheck
+    - errcheck
+    - goconst
+    - gocritic
+    - godox
+    - gofmt
+    - gomnd
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - testpackage
+    - unconvert
+    - unused
+
+linters-settings:
+  errcheck:
+    ignore: github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema:ForceNew|Set,fmt:.*,io:Close
+  staticcheck:
+    checks: ["all"]
+  gocritic:
+   disabled-checks:
+      - regexpMust
+
+issues:
+  max-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 5m
+  go: "1.19"
+  modules-download-mode: mod
