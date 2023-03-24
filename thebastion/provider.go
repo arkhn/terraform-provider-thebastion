@@ -5,6 +5,7 @@ import (
 	"os"
 	"terraform-provider-thebastion/thebastion/clients"
 	"terraform-provider-thebastion/thebastion/users"
+	"terraform-provider-thebastion/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -26,9 +27,10 @@ func New() provider.Provider {
 }
 
 // thebastionProvider is the provider implementation.
-type thebastionProvider struct{}
+type thebastionProvider struct {
+}
 
-// hashicupsProviderModel maps provider schema data to a Go type.
+// thebastionProviderModel maps provider schema data to a Go type.
 type thebastionProviderModel struct {
 	Host           types.String `tfsdk:"host"`
 	Username       types.String `tfsdk:"username"`
@@ -39,6 +41,7 @@ type thebastionProviderModel struct {
 // Metadata returns the provider type name.
 func (p *thebastionProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "thebastion"
+	resp.Version = "0.0.1"
 }
 
 // Schema defines the provider-level schema for configuration data.
@@ -46,16 +49,20 @@ func (p *thebastionProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Optional: true,
+				Description: "IP:PORT for TheBastion.",
+				Optional:    true,
 			},
 			"username": schema.StringAttribute{
-				Optional: true,
+				Description: "Username for TheBastion.",
+				Optional:    true,
 			},
 			"path_private_key": schema.StringAttribute{
-				Optional: true,
+				Description: "Path private key for TheBastion. Used to connect in ssh to TheBastion.",
+				Optional:    true,
 			},
 			"path_known_host": schema.StringAttribute{
-				Optional: true,
+				Description: "Path known host for TheBastion. Used to connect in ssh to TheBastion.",
+				Optional:    true,
 			},
 		},
 	}
@@ -63,7 +70,7 @@ func (p *thebastionProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 
 func (p *thebastionProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	// Retrieve provider data from configuration
-	var config thebastionProviderModel
+	config := thebastionProviderModel{}
 
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -142,43 +149,23 @@ func (p *thebastionProvider) Configure(ctx context.Context, req provider.Configu
 	// errors with provider-specific guidance.
 
 	if host == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Missing TheBastion API Host",
-			"The provider cannot create the TheBastion API client as there is a missing or empty value for the TheBastion API host. "+
-				"Set the host value in the configuration or use the THEBASTION_HOST environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		errMsg, errMsgDetail := utils.MissingEnvMsg("host", "THEBASTION_HOST")
+		resp.Diagnostics.AddAttributeError(path.Root("host"), errMsg, errMsgDetail)
 	}
 
 	if username == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("username"),
-			"Missing TheBastion API Username",
-			"The provider cannot create the TheBastion API client as there is a missing or empty value for the TheBastion API username. "+
-				"Set the username value in the configuration or use the THEBASTION_USERNAME environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		errMsg, errMsgDetail := utils.MissingEnvMsg("username", "THEBASTION_USERNAME")
+		resp.Diagnostics.AddAttributeError(path.Root("username"), errMsg, errMsgDetail)
 	}
 
 	if path_known_host == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("path_known_host"),
-			"Missing TheBastion API PathKnownHost",
-			"The provider cannot create the TheBastion API client as there is a missing or empty value for the TheBastion API PathKnownHost. "+
-				"Set the host value in the configuration or use the THEBASTION_PATH_KNOWN_HOST environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		errMsg, errMsgDetail := utils.MissingEnvMsg("path_known_host", "THEBASTION_PATH_KNOWN_HOST")
+		resp.Diagnostics.AddAttributeError(path.Root("path_known_host"), errMsg, errMsgDetail)
 	}
 
 	if path_private_key == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("path_private_key"),
-			"Missing TheBastion API PathPrivateKey",
-			"The provider cannot create the TheBastion API client as there is a missing or empty value for the TheBastion API PathPrivateKey. "+
-				"Set the username value in the configuration or use the THEBASTION_PATH_PRIVATE_KEY environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		errMsg, errMsgDetail := utils.MissingEnvMsg("path_private_key", "THEBASTION_PATH_PRIVATE_KEY")
+		resp.Diagnostics.AddAttributeError(path.Root("path_private_key"), errMsg, errMsgDetail)
 	}
 
 	if resp.Diagnostics.HasError() {
@@ -192,7 +179,6 @@ func (p *thebastionProvider) Configure(ctx context.Context, req provider.Configu
 	ctx = tflog.SetField(ctx, "thebastion_path_private_key", path_private_key)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "thebastion_host")
 	tflog.Info(ctx, "Setting TheBastion parameters")
-
 	// Create a new TheBastion client using the configuration values
 	client, err := clients.NewClient(host, username, path_private_key, path_known_host)
 	if err != nil {
@@ -220,5 +206,7 @@ func (p *thebastionProvider) DataSources(_ context.Context) []func() datasource.
 
 // Resources defines the resources implemented in the provider.
 func (p *thebastionProvider) Resources(_ context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{
+		users.NewUserResource,
+	}
 }

@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     thebastion = {
-      source = "hashicorp.com/edu/thebastion"
+      source = "hashicorp.com/ovh/thebastion"
     }
   }
 }

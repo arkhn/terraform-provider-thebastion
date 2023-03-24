@@ -7,21 +7,21 @@ type ResponseBastion struct {
 	Value        map[string]interface{} `json:"value"`
 }
 
-// Struct that hold informations about singular user from accountList command
-type AccountListValue struct {
+// Struct that hold information about singular user from accountList command
+type Account struct {
 	UID      int64  `json:"uid"`
 	Name     string `json:"name"`
 	IsActive int64  `json:"is_active"`
 }
 
 type ResponseBastionAccountList struct {
-	ErrorMessage string                      `json:"error_message"`
-	ErrorCode    string                      `json:"error_code"`
-	Command      string                      `json:"command"`
-	Value        map[string]AccountListValue `json:"value"`
+	ErrorMessage string             `json:"error_message"`
+	ErrorCode    string             `json:"error_code"`
+	Command      string             `json:"command"`
+	Value        map[string]Account `json:"value"`
 }
 
-// Struct that hold informations about singular user from accountListIngressKeys command
+// Struct that hold information about singular user from accountListIngressKeys command
 type AccountListIngressKeysValue struct {
 	Family      string        `json:"family"`
 	Validity    string        `json:"validity"`

@@ -8,7 +8,7 @@ import (
 // Misc functions about json operation
 // Pretty print of json, debugging purpose
 func PrettyString(str string) (string, error) {
-	var prettyJSON bytes.Buffer
+	prettyJSON := bytes.Buffer{}
 	if err := json.Indent(&prettyJSON, []byte(str), "", "    "); err != nil {
 		return "", err
 	}
@@ -36,9 +36,9 @@ func ConvertInterfacesToStrings(interfaces []interface{}) []string {
 }
 
 // Compare two string arrays and return leftOnly and rightOnly element
-func CompareLists(left []string, right []string) ([]string, []string) {
-	leftOnly := []string{}
-	rightOnly := []string{}
+func CompareLists(left []string, right []string) (leftOnly []string, rightOnly []string) {
+	leftOnly = []string{}
+	rightOnly = []string{}
 
 	for _, leftItem := range left {
 		found := false
@@ -67,4 +67,12 @@ func CompareLists(left []string, right []string) ([]string, []string) {
 	}
 
 	return leftOnly, rightOnly
+}
+
+// Custom error message for missing env variable
+func MissingEnvMsg(varName, envVarName string) (errorMsg string, errorMsgDetail string) {
+	return "Missing TheBastion API " + varName,
+		"The provider cannot create the TheBastion API client as there is a missing or empty value for the TheBastion API " + varName + "." +
+			"Set the " + varName + " value in the configuration or use the " + envVarName + " environment variable. " +
+			"If either is already set, ensure the value is not empty."
 }
