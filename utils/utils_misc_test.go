@@ -1,6 +1,7 @@
-package utils
+package utils_test
 
 import (
+	"terraform-provider-thebastion/utils"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -43,7 +44,7 @@ func TestFindStringIndex(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := FindStringIndex(test.input_array, test.input_target)
+			got := utils.FindStringIndex(test.input_array, test.input_target)
 
 			if diff := cmp.Diff(got, test.expected); diff != "" {
 				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
@@ -80,7 +81,7 @@ func TestConvertInterfacesToStrings(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := ConvertInterfacesToStrings(test.input)
+			got := utils.ConvertInterfacesToStrings(test.input)
 
 			if diff := cmp.Diff(got, test.expected); diff != "" {
 				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
@@ -131,7 +132,7 @@ func TestCompareLists(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got_left, got_right := CompareLists(test.input_left, test.input_right)
+			got_left, got_right := utils.CompareLists(test.input_left, test.input_right)
 
 			if diff := cmp.Diff(got_left, test.expected_left_only); diff != "" {
 				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
