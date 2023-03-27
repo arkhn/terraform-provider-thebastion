@@ -8,4 +8,4 @@ terraform {
 
 provider "thebastion" {}
 
-data "thebastion_users" "all" {}
+data "thebastion_groups" "all" {}
