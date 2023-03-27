@@ -2,7 +2,7 @@ module terraform-provider-thebastion
 
 go 1.20
 
-require github.com/hashicorp/terraform-plugin-framework v1.1.1
+require github.com/hashicorp/terraform-plugin-framework v1.2.0
 
 require golang.org/x/crypto v0.7.0
 
