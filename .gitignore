@@ -1,6 +1,11 @@
 .DS_Store
 vendor
 
+.vscode
+
+# Key name used to testing
+idthebastion*
+
 ### Go Patch ###
 terraform-provider-thebastion
 bin
