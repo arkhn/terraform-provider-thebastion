@@ -19,7 +19,7 @@ var lock = &sync.Mutex{}
 
 var clientInstance *clients.Client
 
-func getClient() (*clients.Client, error) {
+func GetClient() (*clients.Client, error) {
 	if clientInstance == nil {
 		lock.Lock()
 		defer lock.Unlock()
@@ -78,6 +78,12 @@ func TestAccTheBastionUserDataSource(exampleResource string) string {
 	`
 }
 
+func TestAccTheBastionGroupsDataSource(exampleResource string) string {
+	return exampleResource + `
+	data "thebastion_groups" "all" {}
+	`
+}
+
 // testAccPreCheck validates the necessary test API keys exist
 // in the testing environment
 func TestAccPreCheck(t *testing.T) {
@@ -104,19 +110,25 @@ func TestAccPreCheck(t *testing.T) {
 	msg_error, msg_error_detail = utils.MissingEnvMsg("path_private_key", "THEBASTION_PATH_PRIVATE_KEY")
 	require.NotEqual(path_private_key, "", msg_error, msg_error_detail)
 
-	client, err := getClient()
+	client, err := GetClient()
 	require.Nil(err, "Cannot connect to TheBastion.")
 
 	// Make sure only expected users are on TheBastion
-	responseBastion, err := client.GetListAccount(context.Background())
+	responseBastionAccountList, err := client.GetListAccount(context.Background())
 	require.Nil(err, "Cannot get the list of account from TheBastion.")
 
 	nbUsersTheBastion := 2
-	require.Equal(len(responseBastion.Value), nbUsersTheBastion, "Unexpected users on TheBastion for testing. Please delete all users on TheBastion except poweruser and healthcheck")
+	require.Equal(len(responseBastionAccountList.Value), nbUsersTheBastion, "Unexpected users on TheBastion for testing. Please delete all users on TheBastion except poweruser and healthcheck: "+fmt.Sprint(responseBastionAccountList.Value))
+
+	responseBastionGroupList, err := client.GetListGroup(context.Background())
+	require.Nil(err, "Cannot get the list of groups from TheBastion.")
+
+	nbGroupsTheBastion := 0
+	require.Equal(len(responseBastionGroupList.Value), nbGroupsTheBastion, "Unexpected groups on TheBastion for testing. Please delete all groups on TheBastion: "+fmt.Sprint(responseBastionGroupList.Value))
 }
 
 func TestAccCheckTheBastionUserDestroy(s *terraform.State) error {
-	client, err := getClient()
+	client, err := GetClient()
 
 	if err != nil {
 		return fmt.Errorf("cannot connect to TheBastion: %s", err.Error())

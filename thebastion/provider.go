@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"terraform-provider-thebastion/thebastion/clients"
+	"terraform-provider-thebastion/thebastion/groups"
 	"terraform-provider-thebastion/thebastion/users"
 	"terraform-provider-thebastion/utils"
 
@@ -201,6 +202,7 @@ func (p *thebastionProvider) Configure(ctx context.Context, req provider.Configu
 func (p *thebastionProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		users.NewUsersDataSource,
+		groups.NewGroupsDataSource,
 	}
 }
 

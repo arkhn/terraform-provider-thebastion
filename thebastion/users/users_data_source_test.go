@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// example.User represents a concrete Go type that represents an API resource
 func TestAccTheBastionUsers_single(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
