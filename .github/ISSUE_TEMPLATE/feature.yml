@@ -1,7 +1,7 @@
 name: Feature
 description: Suggest an idea for a new feature or enhancement
 title: "[FEAT]: "
-labels: ["Type: Feature", "Status: Triage"]
+labels: ["type/feature", "type/enhancement"]
 body:
   - type: markdown
     attributes:
@@ -16,19 +16,11 @@ body:
     validations:
       required: true
   - type: input
-    id: sdk_version
+    id: thebastion_version
     attributes:
-      label: SDK Version
-      description: Does this feature suggestion apply to a specific SDK version?
-      placeholder: Octokit.rb v6.0.0
-    validations:
-      required: false
-  - type: input
-    id: api_version
-    attributes:
-      label: API Version
-      description: Does this feature suggestion apply to a specific version of the GitHub REST API or GraphQL API?
-      placeholder: ex. v1.1.1
+      label: TheBastion version
+      description: Does this feature suggestion apply to a specific TheBastion version?
+      placeholder: v3.11.01
     validations:
       required: false
   - type: textarea
@@ -36,14 +28,14 @@ body:
     attributes:
       label: Relevant log output
       description: |
-        Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+        Please copy and paste any relevant log output. If it is a missing feature from TheBastion, please add a link to corresponding documentation.  
         Please check your logs before submission to ensure sensitive information is redacted.
-      render: Shell
+      render: Markdown
   - type: checkboxes
     id: terms
     attributes:
       label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/integrations/terraform-provider-github/blob/main/CODE_OF_CONDUCT.md)
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/arkhn/terraform-provider-thebastion/blob/main/CODE_OF_CONDUCT.md)
       options:
         - label: I agree to follow this project's Code of Conduct
           required: true
