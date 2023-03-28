@@ -41,7 +41,6 @@ type thebastionProviderModel struct {
 // Metadata returns the provider type name.
 func (p *thebastionProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "thebastion"
-	resp.Version = "0.0.1"
 }
 
 // Schema defines the provider-level schema for configuration data.

@@ -1,7 +1,7 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
 BINARY=terraform-provider-thebastion
-VERSION=0.2
+VERSION=0.1.0
 OS_ARCH=darwin_amd64
 
 .PHONY: build release generate install test tools lint depscheck fmt fmtcheck vet testacc
