@@ -1,6 +1,6 @@
 module terraform-provider-thebastion
 
-go 1.20
+go 1.19
 
 require github.com/hashicorp/terraform-plugin-framework v1.2.0
 
