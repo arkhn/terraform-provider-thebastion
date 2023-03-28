@@ -31,6 +31,8 @@ body:
         Please copy and paste any relevant log output. If it is a missing feature from TheBastion, please add a link to corresponding documentation.  
         Please check your logs before submission to ensure sensitive information is redacted.
       render: Markdown
+    validations:
+      required: false
   - type: checkboxes
     id: terms
     attributes:

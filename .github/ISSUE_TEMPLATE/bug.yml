@@ -29,7 +29,7 @@ body:
     attributes:
       label: Version
       description: What version of terraform-provider-thebastion are you using?
-      placeholder: 0.0.1
+      placeholder: 0.1.0
     validations:
       required: true
   - type: textarea
@@ -38,6 +38,8 @@ body:
       label: Relevant log output
       description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
       render: Shell
+    validations:
+      required: false
   - type: checkboxes
     id: terms
     attributes:
