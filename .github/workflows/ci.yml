@@ -22,7 +22,7 @@ jobs:
       - run: make build
       - run: make test
   doc:
-    if: ${{ failure() }}
+    if: ${{ success() }}
     needs: ci
     runs-on: ubuntu-latest
     steps:
