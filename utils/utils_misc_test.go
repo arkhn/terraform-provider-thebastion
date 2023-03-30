@@ -1,14 +1,17 @@
 package utils_test
 
 import (
+	"fmt"
 	"terraform-provider-thebastion/utils"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
 )
 
 // FindStringIndex
 func TestFindStringIndex(t *testing.T) {
+	require := require.New(t)
 	t.Parallel()
 
 	type testCase struct {
@@ -45,16 +48,16 @@ func TestFindStringIndex(t *testing.T) {
 			t.Parallel()
 
 			got := utils.FindStringIndex(test.input_array, test.input_target)
-
-			if diff := cmp.Diff(got, test.expected); diff != "" {
-				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
-			}
+			diff, err := fmt.Printf("unexpected diff (+wanted, -got): %s", cmp.Diff(got, test.expected))
+			require.Equal(err, nil)
+			require.Equal(got, test.expected, diff)
 		})
 	}
 }
 
 // ConvertInterfacesToStrings
 func TestConvertInterfacesToStrings(t *testing.T) {
+	require := require.New(t)
 	t.Parallel()
 
 	type testCase struct {
@@ -82,16 +85,14 @@ func TestConvertInterfacesToStrings(t *testing.T) {
 			t.Parallel()
 
 			got := utils.ConvertInterfacesToStrings(test.input)
-
-			if diff := cmp.Diff(got, test.expected); diff != "" {
-				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
-			}
+			require.ElementsMatchf(got, test.expected, "unexpected diff (+wanted, -got): %s", cmp.Diff(got, test.expected))
 		})
 	}
 }
 
 // CompareLists
 func TestCompareLists(t *testing.T) {
+	require := require.New(t)
 	t.Parallel()
 
 	type testCase struct {
@@ -133,13 +134,8 @@ func TestCompareLists(t *testing.T) {
 			t.Parallel()
 
 			got_left, got_right := utils.CompareLists(test.input_left, test.input_right)
-
-			if diff := cmp.Diff(got_left, test.expected_left_only); diff != "" {
-				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
-			}
-			if diff := cmp.Diff(got_right, test.expected_right_only); diff != "" {
-				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
-			}
+			require.ElementsMatchf(got_left, test.expected_left_only, "unexpected diff (+wanted, -got): %s", cmp.Diff(got_left, test.expected_left_only))
+			require.ElementsMatchf(got_right, test.expected_right_only, "unexpected diff (+wanted, -got): %s", cmp.Diff(got_right, test.expected_right_only))
 		})
 	}
 }

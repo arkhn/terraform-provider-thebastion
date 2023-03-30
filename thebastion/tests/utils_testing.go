@@ -78,7 +78,7 @@ func TestAccTheBastionUserDataSource(exampleResource string) string {
 	`
 }
 
-// testAccPreCheck validates the necessary test API keys exist
+// TestAccPreCheck validates the necessary test API keys exist
 // in the testing environment
 func TestAccPreCheck(t *testing.T) {
 	// Terminate test if fail

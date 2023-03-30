@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// example.User represents a concrete Go type that represents an API resource
+// TestAccTheBastionUsers_single test to get users when there is single user in TheBastion
 func TestAccTheBastionUsers_single(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
@@ -48,6 +48,7 @@ func TestAccTheBastionUsers_single(t *testing.T) {
 	})
 }
 
+// TestAccTheBastionUsers_multiple test to get users when there is multiple users in TheBastion
 func TestAccTheBastionUsers_multiple(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
@@ -88,6 +89,7 @@ func TestAccTheBastionUsers_multiple(t *testing.T) {
 	})
 }
 
+// TestAccTheBastionUsers_empty test to get users when there is no users in TheBastion
 func TestAccTheBastionUsers_empty(t *testing.T) {
 	thebastionServer := thebastion.New()
 
