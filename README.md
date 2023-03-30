@@ -1,4 +1,4 @@
-[![CI](https://github.com/arkhn/terraform-provider-thebastion/workflows/ci/badge.svg)](https://github.com/arkhn/terraform-provider-thebastion/actions)
+[![GitHub Actions CI](https://github.com/arkhn/terraform-provider-thebastion/actions/workflows/ci.yml/badge.svg)](https://github.com/arkhn/terraform-provider-thebastion/actions/workflows/ci.yml)
 
 # Terraform Provider TheBastion
 
@@ -16,24 +16,21 @@ $ go build -o terraform-provider-thebastion
 
 To communicate with TheBastion you must set environment variables.
 ```shell
-export THEBASTION_HOST=host
-THEBASTION_USERNAME=username
-THEBASTION_PATH_KNOWN_HOST=$HOME/.ssh/known_hosts
+export THEBASTION_HOST=host \
+THEBASTION_USERNAME=username \
+THEBASTION_PATH_KNOWN_HOST=$HOME/.ssh/known_hosts \
 THEBASTION_PATH_PRIVATE_KEY=$HOME/.ssh/id_ed25519
 ```
 
 ## Setup (Required if provider not publish to the Terraform Registry)
 
-You need to complete this file for the terraform-provider:
-- .terraformrc, you must replace `<Username>` with the username of your session.
-
-If the provider is not on the terraform registery, you must run the following command
+Run the following command: 
 
 ```shell
-$ cp .terraformrc ~/.terraformrc 
+cp .terraformrc.template .terraformrc 
 ```
 
-This will specify to terraform to look for the local `terraform-provider-thebastion`.
+You need to complete `.terraformrc` for the terraform-provider, you must replace `<Username>` with the username of your session.
 
 ## Test sample configuration
 
@@ -46,15 +43,27 @@ $ make install
 Then, navigate to the `examples` directory. 
 
 ```shell
-$ cd examples
+$ cd examples/provider-install-verification/
 ```
 
-Run the following command to initialize the workspace and apply the sample configuration.
+Run the following command to apply the sample configuration.
 
 ```shell
-$ terraform init && terraform apply
+$ terraform apply
+```
+
+## Generate documentation 
+
+Run the following command to generate documentation about the provider.
+
+```shell
+$ go generate ./...
 ```
 
 ## Usage
 
-For more information about the `terraform-provider-thebastion` and its features, visit here.
+For more information about the `terraform-provider-thebastion` and its features, visit [here](docs/index.md).
+
+## Testing 
+
+For more information about the `terraform-provider-thebastion` and how to test new features, visit [here](TESTING.md).

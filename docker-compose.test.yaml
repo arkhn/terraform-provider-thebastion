@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+
+  thebastion:
+    image: ovhcom/the-bastion:sandbox
+    container_name: bastiontest
+    ports:
+      - 1122:22
+    volumes:
+      - ./entrypoint.sh:/mount/entrypoint.sh
+      - ./idthebastion.pub:/mount/idthebastion.pub
+    entrypoint: /mount/entrypoint.sh
+  

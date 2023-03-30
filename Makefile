@@ -1,9 +1,6 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
-HOSTNAME=hashicorp.com
-NAMESPACE=edu
-NAME=thebastion
-BINARY=terraform-provider-${NAME}
+BINARY=terraform-provider-thebastion
 VERSION=0.2
 OS_ARCH=darwin_amd64
 
@@ -32,6 +29,7 @@ generate:
 	go generate ./...
 
 install:
+	cp .terraformrc ~/.terraformrc
 	go install .
 
 test:
