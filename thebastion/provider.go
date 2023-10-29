@@ -209,5 +209,6 @@ func (p *thebastionProvider) DataSources(_ context.Context) []func() datasource.
 func (p *thebastionProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		users.NewUserResource,
+		groups.NewGroupResource,
 	}
 }

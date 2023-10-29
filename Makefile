@@ -37,7 +37,7 @@ test:
 
 tools:
 	go install github.com/client9/misspell/cmd/misspell@v0.3.4
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.2
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
 
 lint:
 	@echo "==> Checking source code against linters..."

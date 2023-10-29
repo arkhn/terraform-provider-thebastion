@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"terraform-provider-thebastion/thebastion/clients"
+	"terraform-provider-thebastion/thebastion/groups"
 	"terraform-provider-thebastion/utils"
 	"testing"
 
@@ -62,6 +63,20 @@ func TestAccCheckTheBastionUsersValues(resourceName string, i int, uid, name, is
 	)
 }
 
+func TestAccCheckTheBastionGroupValues(resourceName, name, owner, algo string, size int, list_server []groups.Server) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr(resourceName, "name", name),
+		resource.TestCheckResourceAttr(resourceName, "owner", owner),
+		resource.TestCheckResourceAttr(resourceName, "algo", algo),
+		resource.TestCheckResourceAttr(resourceName, "size", fmt.Sprint(size)),
+		resource.TestCheckResourceAttr(resourceName, "servers.#", fmt.Sprint(len(list_server))),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.host", list_server[0].Host),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.user", list_server[0].User),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.port", fmt.Sprint(list_server[0].Port)),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.comment", list_server[0].Comment),
+	)
+}
+
 // TestAccTheBastionUserResource returns an configuration for an user with the provided configuration
 func TestAccTheBastionUserResource(resourceName string, uid int64, name string, ingress_keys []string) string {
 	return fmt.Sprintf(`
@@ -70,6 +85,28 @@ func TestAccTheBastionUserResource(resourceName string, uid int64, name string, 
 		name = "%s"
 		ingress_keys = ["%s"]
 	}`, resourceName, uid, name, strings.Join(ingress_keys, "\",\""))
+}
+
+func TestAccTheBastionGroupResource(resourceName string, name string, owner string, algo string, size int, list_server []groups.Server) string {
+	var servers string
+	for _, server := range list_server {
+		servers += fmt.Sprintf(`
+		{
+			host = "%s"
+			user = "%s"
+			port = %d
+			comment = "%s"
+		},`, server.Host, server.User, server.Port, server.Comment)
+	}
+
+	return fmt.Sprintf(`
+	resource "thebastion_group" "%s" {
+		name = "%s"
+		owner = "%s"
+		algo = "%s"
+		size = %d
+		servers = [%s]
+	}`, resourceName, name, owner, algo, size, servers)
 }
 
 func TestAccTheBastionUserDataSource(exampleResource string) string {
@@ -120,6 +157,7 @@ func TestAccPreCheck(t *testing.T) {
 	nbUsersTheBastion := 2
 	require.Equal(len(responseBastionAccountList.Value), nbUsersTheBastion, "Unexpected users on TheBastion for testing. Please delete all users on TheBastion except poweruser and healthcheck: "+fmt.Sprint(responseBastionAccountList.Value))
 
+	// Make sure no groups are on TheBastion
 	responseBastionGroupList, err := client.GetListGroup(context.Background())
 	require.Nil(err, "Cannot get the list of groups from TheBastion.")
 
@@ -150,6 +188,33 @@ func TestAccCheckTheBastionUserDestroy(s *terraform.State) error {
 			if value.Name == rs.Primary.Attributes["name"] {
 				return fmt.Errorf("user (%s) still exists", rs.Primary.Attributes["name"])
 			}
+		}
+	}
+
+	return nil
+}
+
+func TestAccCheckTheBastionGroupDestroy(s *terraform.State) error {
+	client, err := GetClient()
+
+	if err != nil {
+		return fmt.Errorf("cannot connect to TheBastion: %s", err.Error())
+
+	}
+
+	responseBastion, err := client.GetListGroup(context.Background())
+	if err != nil {
+		return fmt.Errorf("cannot get the list of group from TheBastion: %s", err.Error())
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "thebastion_group" {
+			continue
+		}
+
+		_, ok := responseBastion.Value[rs.Primary.Attributes["name"]]
+		if ok {
+			return fmt.Errorf("group (%s) still exists", rs.Primary.Attributes["name"])
 		}
 	}
 

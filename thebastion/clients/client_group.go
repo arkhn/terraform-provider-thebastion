@@ -30,7 +30,7 @@ func (c *Client) GetListGroup(ctx context.Context) (*ResponseBastionGroupList, e
 }
 
 // Cannot create a group encrypted yet
-func (c *Client) CreateGroup(ctx context.Context, groupName, owner, algo string, size int) (*ResponseBastionCreateGroup, error) {
+func (c *Client) CreateGroup(ctx context.Context, groupName, owner, algo string, size int64) (*ResponseBastionCreateGroup, error) {
 	command := fmt.Sprintf("--osh groupCreate --group %s --owner %s --algo %s --size %s --json", groupName, owner, algo, fmt.Sprint(size))
 	responseBastion, err := c.SendCommandBastion(ctx, command)
 	if err != nil {
@@ -52,8 +52,8 @@ func (c *Client) CreateGroup(ctx context.Context, groupName, owner, algo string,
 	return &responseBastionCreateGroup, nil
 }
 
-func (c *Client) DestroyGroup(ctx context.Context, groupName string) (*ResponseBastion, error) {
-	command := fmt.Sprintf("--osh groupDestroy --group %s --no-confirm --json", groupName)
+func (c *Client) DeleteGroup(ctx context.Context, groupName string) (*ResponseBastion, error) {
+	command := fmt.Sprintf("--osh groupDelete --group %s --no-confirm --json", groupName)
 	responseBastion, err := c.SendCommandBastion(ctx, command)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (c *Client) DestroyGroup(ctx context.Context, groupName string) (*ResponseB
 }
 
 // Add a server to a group
-func (c *Client) AddServerToGroup(ctx context.Context, groupName string, host string, user string, port int, comment string) (*ResponseBastion, error) {
+func (c *Client) AddServerToGroup(ctx context.Context, groupName string, host string, user string, port int64, comment string) (*ResponseBastion, error) {
 	command := fmt.Sprintf("--osh groupAddServer --group %s --host %s --user %s --port %s --comment %s --json", groupName, host, user, fmt.Sprint(port), comment)
 	responseBastion, err := c.SendCommandBastion(ctx, command)
 	if err != nil {

@@ -18,7 +18,7 @@ resource "thebastion_user" "test_owner" {
 
 resource "thebastion_group" "test" {
     name = "test"
-    owner =  "test_owner"
+    owner = "test_owner"
     algo = "rsa"
     size = 2048
     servers = [
