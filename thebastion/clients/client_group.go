@@ -120,6 +120,52 @@ func (c *Client) DeleteServerFromGroup(ctx context.Context, groupName string, ho
 	return &responseBastionDeleteServerFromGroup, nil
 }
 
+// Get list of servers from a group
+func (c *Client) GetListServer(ctx context.Context, groupName string) (*ResponseBastionListServer, error) {
+	command := fmt.Sprintf("--osh groupListServers --group %s --json", groupName)
+	responseBastion, err := c.SendCommandBastion(ctx, command)
+	if err != nil {
+		return nil, err
+	}
+
+	// map to struct
+	marshal, err := json.Marshal(responseBastion)
+	if err != nil {
+		return nil, err
+	}
+
+	var responseBastionListServer ResponseBastionListServer
+	err = json.Unmarshal(marshal, &responseBastionListServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &responseBastionListServer, nil
+}
+
+// Get group information
+func (c *Client) GetGroupInfo(ctx context.Context, groupName string) (*ResponseBastionGroupInfo, error) {
+	command := fmt.Sprintf("--osh groupInfo --group %s --json", groupName)
+	responseBastion, err := c.SendCommandBastion(ctx, command)
+	if err != nil {
+		return nil, err
+	}
+
+	// map to struct
+	marshal, err := json.Marshal(responseBastion)
+	if err != nil {
+		return nil, err
+	}
+
+	var responseBastionGroupInfo ResponseBastionGroupInfo
+	err = json.Unmarshal(marshal, &responseBastionGroupInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &responseBastionGroupInfo, nil
+}
+
 // Add owner to a group
 func (c *Client) AddOwnerToGroup(ctx context.Context, groupName string, owner string) (*ResponseBastion, error) {
 	command := fmt.Sprintf("--osh groupAddOwner --group %s --account %s --json", groupName, owner)

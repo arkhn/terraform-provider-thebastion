@@ -128,3 +128,55 @@ type ResponseBastionCreateGroup struct {
 		} `json:"public_key"`
 	} `json:"value"`
 }
+
+type ResponseBastionListServer struct {
+	Command      string `json:"command"`
+	ErrorCode    string `json:"error_code"`
+	ErrorMessage string `json:"error_message"`
+	Value        []struct {
+		Expiry        any    `json:"expiry"`
+		ForcePassword string `json:"forcePassword"`
+		Port          int64  `json:"port"`
+		AddedDate     string `json:"addedDate"`
+		UserComment   string `json:"userComment"`
+		User          string `json:"user"`
+		AddedBy       string `json:"addedBy"`
+		ForceKey      any    `json:"forceKey"`
+		ReverseDns    any    `json:"reverseDns"`
+		Ip            string `json:"ip"`
+		Comment       string `json:"comment"`
+	} `json:"value"`
+}
+
+type ResponseBastionGroupInfo struct {
+	Command      string `json:"command"`
+	ErrorCode    string `json:"error_code"`
+	ErrorMessage string `json:"error_message"`
+	Value        struct {
+		Guests_accesses struct{} `json:"guests_accesses"`
+		Members         []string `json:"members"`
+		Owners          []string `json:"owners"`
+		FullMembers     []string `json:"full_members"`
+		Inactive        []string `json:"inactive"`
+		Group           string   `json:"group"`
+		Gatekeepers     []string `json:"gatekeepers"`
+		Keys            map[string]struct {
+			Prefix      string   `json:"prefix"`
+			Typecode    string   `json:"typecode"`
+			Size        int64    `json:"size"`
+			Mtime       int      `json:"mtime"`
+			Id          string   `json:"id"`
+			Filename    string   `json:"filename"`
+			Fingerprint string   `json:"fingerprint"`
+			Comment     string   `json:"comment"`
+			FromList    []string `json:"fromList"`
+			Base64      string   `json:"base64"`
+			Fullpath    string   `json:"fullpath"`
+			Line        string   `json:"line"`
+			Family      string   `json:"family"`
+		} `json:"keys"`
+		Guests         []string `json:"guests"`
+		Aclkeepers     []string `json:"aclkeepers"`
+		PartialMembers []string `json:"partial_members"`
+	} `json:"value"`
+}

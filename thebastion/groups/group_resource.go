@@ -179,6 +179,90 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read refreshes the Terraform state with the latest data.
 func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	// Get current state
+	state := groupModel{}
+
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	groups, err := r.client.GetListGroup(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error while reading groups",
+			err.Error(),
+		)
+		return
+	}
+
+	// Check if group in groups keys
+	if _, ok := groups.Value[state.Name.ValueString()]; !ok {
+		groups_str := ""
+		for key := range groups.Value {
+			groups_str += key + " "
+		}
+		resp.Diagnostics.AddError(
+			"Error while reading group",
+			"Group not found: "+state.Name.String()+" in "+groups_str,
+		)
+		return
+	}
+
+	groupInfo, err := r.client.GetGroupInfo(ctx, state.Name.String())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error while reading group info",
+			err.Error(),
+		)
+		return
+	}
+
+	// Get servers of the group
+	servers, err := r.client.GetListServer(ctx, state.Name.String())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error while reading servers of group",
+			err.Error(),
+		)
+		return
+	}
+
+	// Overwrite state with the latest data
+	state.Name = types.StringValue(groupInfo.Value.Group)
+	state.Owner = types.StringValue(groupInfo.Value.Owners[0])
+	for _, key := range groupInfo.Value.Keys {
+		state.Algo = types.StringValue(key.Typecode)
+		state.Size = types.Int64Value(key.Size)
+		break
+	}
+
+	for _, server := range servers.Value {
+		state.Servers = append(state.Servers, serverModel{
+			Host:    types.StringValue(server.Ip),
+			User:    types.StringValue(server.User),
+			Port:    types.Int64Value(server.Port),
+			Comment: types.StringValue(server.Comment),
+		})
+	}
+
+	stateIDString, err := uuid.GenerateUUID()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error generating id",
+			"Could not create id for testing: "+err.Error(),
+		)
+		return
+	}
+	state.ID = types.StringValue(stateIDString)
+
+	// Set state to the resource
+	diags = resp.State.Set(ctx, state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
