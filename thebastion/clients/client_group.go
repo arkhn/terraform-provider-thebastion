@@ -75,8 +75,8 @@ func (c *Client) DeleteGroup(ctx context.Context, groupName string) (*ResponseBa
 }
 
 // Add a server to a group
-func (c *Client) AddServerToGroup(ctx context.Context, groupName string, host string, user string, port int64, comment string) (*ResponseBastion, error) {
-	command := fmt.Sprintf("--osh groupAddServer --group %s --host %s --user %s --port %s --comment %s --json", groupName, host, user, fmt.Sprint(port), comment)
+func (c *Client) AddServerToGroup(ctx context.Context, groupName string, host string, user string, port int64, user_comment string) (*ResponseBastion, error) {
+	command := fmt.Sprintf("--osh groupAddServer --group %s --host %s --user %s --port %s --comment %s --force --json", groupName, host, user, fmt.Sprint(port), user_comment)
 	responseBastion, err := c.SendCommandBastion(ctx, command)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (c *Client) AddServerToGroup(ctx context.Context, groupName string, host st
 }
 
 // Delete a server from a group
-func (c *Client) DeleteServerFromGroup(ctx context.Context, groupName string, host string, user string, port int) (*ResponseBastion, error) {
+func (c *Client) DeleteServerFromGroup(ctx context.Context, groupName string, host string, user string, port int64) (*ResponseBastion, error) {
 	command := fmt.Sprintf("--osh groupDelServer --group %s --host %s --user %s --port %s --json", groupName, host, user, fmt.Sprint(port))
 	responseBastion, err := c.SendCommandBastion(ctx, command)
 	if err != nil {
@@ -163,6 +163,13 @@ func (c *Client) GetGroupInfo(ctx context.Context, groupName string) (*ResponseB
 		return nil, err
 	}
 
+	for i := range responseBastionGroupInfo.Value.Keys {
+		if responseBastionGroupInfo.Value.Keys[i].Typecode == "ssh-rsa" {
+			modifiedKey := responseBastionGroupInfo.Value.Keys[i]
+			modifiedKey.Typecode = "rsa"
+			responseBastionGroupInfo.Value.Keys[i] = modifiedKey
+		}
+	}
 	return &responseBastionGroupInfo, nil
 }
 

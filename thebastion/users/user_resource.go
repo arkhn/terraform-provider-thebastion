@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"terraform-provider-thebastion/thebastion/clients"
 
@@ -172,18 +173,12 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	ingress_keys, diags := types.ListValueFrom(ctx, types.StringType, []string{})
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if account != nil {
 		account_ingress_keys, err := r.client.GetListIngressKeys(ctx, name)
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error getting TheBastion User ingress keys",
-				"Could not get user with name "+state.Name.ValueString()+": "+err.Error(),
+				"Client Error",
+				fmt.Sprintf("Error while reading ingress keys of user: %s", err.Error()),
 			)
 			return
 		}
@@ -191,28 +186,21 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		for _, key := range account_ingress_keys.Value.Keys {
 			ingress_keys_string = append(ingress_keys_string, key.Line)
 		}
-		ingress_keys, diags = types.ListValueFrom(ctx, types.StringType, ingress_keys_string)
+		ingress_keys, diags := types.ListValueFrom(ctx, types.StringType, ingress_keys_string)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-	}
 
-	// Overwrite items with refreshed state
-	state.Name = types.StringValue(account.Name)
-	state.Uid = types.Int64Value(account.UID)
-	state.Is_active = types.Int64Value(account.IsActive)
-	state.Ingress_keys = ingress_keys
+		// Overwrite items with refreshed state
+		state.Name = types.StringValue(account.Name)
+		state.Uid = types.Int64Value(account.UID)
+		state.Is_active = types.Int64Value(account.IsActive)
+		state.Ingress_keys = ingress_keys
 
-	stateIDString, err := uuid.GenerateUUID()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error generating id",
-			"Could not create id for testing: "+err.Error(),
-		)
-		return
+		uuid, _ := uuid.GenerateUUID()
+		state.ID = types.StringValue(uuid)
 	}
-	state.ID = types.StringValue(stateIDString)
 
 	// Set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -227,14 +215,12 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// Retrieve values from plan
 	plan, state := userModel{}, userModel{}
 
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -242,14 +228,12 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// Generate API request body from plan
 	name := plan.Name.ValueString()
 	planIngressKeys, stateIngressKeys := []string{}, []string{}
-	diags = plan.Ingress_keys.ElementsAs(ctx, &planIngressKeys, true)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(plan.Ingress_keys.ElementsAs(ctx, &planIngressKeys, true)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = state.Ingress_keys.ElementsAs(ctx, &stateIngressKeys, true)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(state.Ingress_keys.ElementsAs(ctx, &stateIngressKeys, true)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -258,8 +242,8 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	err := r.client.UpdateListIngressKeys(ctx, name, stateIngressKeys, planIngressKeys)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error update TheBastion User ingress keys",
-			"Could not update user ingress keys, unexpected error:"+err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while updating ingress keys of user: %s", err.Error()),
 		)
 		return
 	}
@@ -269,8 +253,8 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	account, err := r.client.GetAccount(ctx, name)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error reading user",
-			"Could not get user, unexpected error: "+err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while reading user: %s", err.Error()),
 		)
 		return
 	}
@@ -282,8 +266,8 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		account_ingress_keys, err := r.client.GetListIngressKeys(ctx, name)
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error getting TheBastion User ingress keys",
-				"Could not get user with name "+state.Name.ValueString()+": "+err.Error(),
+				"Client Error",
+				fmt.Sprintf("Error while reading ingress keys of user: %s", err.Error()),
 			)
 			return
 		}
@@ -291,7 +275,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		for _, key := range account_ingress_keys.Value.Keys {
 			ingress_keys_string = append(ingress_keys_string, key.Line)
 		}
-		ingress_keys, diags = types.ListValueFrom(ctx, types.StringType, ingress_keys_string)
+		_, diags := types.ListValueFrom(ctx, types.StringType, ingress_keys_string)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -304,18 +288,10 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	plan.Uid = types.Int64Value(account.UID)
 	plan.Ingress_keys = ingress_keys
 
-	planIDString, err := uuid.GenerateUUID()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error generating id",
-			"Could not create id for testing: "+err.Error(),
-		)
-		return
-	}
-	plan.ID = types.StringValue(planIDString)
+	uuid, _ := uuid.GenerateUUID()
+	plan.ID = types.StringValue(uuid)
 
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

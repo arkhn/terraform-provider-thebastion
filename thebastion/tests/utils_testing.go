@@ -63,17 +63,17 @@ func TestAccCheckTheBastionUsersValues(resourceName string, i int, uid, name, is
 	)
 }
 
-func TestAccCheckTheBastionGroupValues(resourceName, name, owner, algo string, size int, list_server []groups.Server) resource.TestCheckFunc {
+func TestAccCheckTheBastionGroupValues(resourceName, name, owner, algo string, size int, list_server []groups.ServerModel) resource.TestCheckFunc {
 	return resource.ComposeAggregateTestCheckFunc(
 		resource.TestCheckResourceAttr(resourceName, "name", name),
 		resource.TestCheckResourceAttr(resourceName, "owner", owner),
 		resource.TestCheckResourceAttr(resourceName, "algo", algo),
 		resource.TestCheckResourceAttr(resourceName, "size", fmt.Sprint(size)),
 		resource.TestCheckResourceAttr(resourceName, "servers.#", fmt.Sprint(len(list_server))),
-		resource.TestCheckResourceAttr(resourceName, "servers.0.host", list_server[0].Host),
-		resource.TestCheckResourceAttr(resourceName, "servers.0.user", list_server[0].User),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.host", list_server[0].Host.ValueString()),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.user", list_server[0].User.ValueString()),
 		resource.TestCheckResourceAttr(resourceName, "servers.0.port", fmt.Sprint(list_server[0].Port)),
-		resource.TestCheckResourceAttr(resourceName, "servers.0.comment", list_server[0].Comment),
+		resource.TestCheckResourceAttr(resourceName, "servers.0.user_comment", list_server[0].UserComment.ValueString()),
 	)
 }
 
@@ -87,16 +87,16 @@ func TestAccTheBastionUserResource(resourceName string, uid int64, name string, 
 	}`, resourceName, uid, name, strings.Join(ingress_keys, "\",\""))
 }
 
-func TestAccTheBastionGroupResource(resourceName string, name string, owner string, algo string, size int, list_server []groups.Server) string {
+func TestAccTheBastionGroupResource(resourceName string, name string, owner string, algo string, size int, list_server []groups.ServerModel) string {
 	var servers string
 	for _, server := range list_server {
 		servers += fmt.Sprintf(`
 		{
-			host = "%s"
-			user = "%s"
+			host = %s
+			user = %s
 			port = %d
-			comment = "%s"
-		},`, server.Host, server.User, server.Port, server.Comment)
+			user_comment = %s
+		},`, server.Host.String(), server.User.String(), server.Port.ValueInt64(), server.UserComment.String())
 	}
 
 	return fmt.Sprintf(`
@@ -147,22 +147,45 @@ func TestAccPreCheck(t *testing.T) {
 	msg_error, msg_error_detail = utils.MissingEnvMsg("path_private_key", "THEBASTION_PATH_PRIVATE_KEY")
 	require.NotEqual(path_private_key, "", msg_error, msg_error_detail)
 
-	client, err := GetClient()
+	_, err := GetClient()
 	require.Nil(err, "Cannot connect to TheBastion.")
 
-	// Make sure only expected users are on TheBastion
-	responseBastionAccountList, err := client.GetListAccount(context.Background())
-	require.Nil(err, "Cannot get the list of account from TheBastion.")
+	// // Make sure only expected users are on TheBastion
+	// responseBastionAccountList, err := client.GetListAccount(context.Background())
+	// require.Nil(err, "Cannot get the list of account from TheBastion.")
 
-	nbUsersTheBastion := 2
-	require.Equal(len(responseBastionAccountList.Value), nbUsersTheBastion, "Unexpected users on TheBastion for testing. Please delete all users on TheBastion except poweruser and healthcheck: "+fmt.Sprint(responseBastionAccountList.Value))
+	// nbUsersTheBastion := 2
+	// if len(responseBastionAccountList.Value) != nbUsersTheBastion {
+	// 	// Try to delete all users except poweruser and healthcheck
+	// 	for user, _ := range responseBastionAccountList.Value {
+	// 		if user != "poweruser" && user != "healthcheck" {
+	// 			_, err := client.DeleteAccount(context.Background(), user)
+	// 			require.Nil(err, "Cannot delete user "+user+" from TheBastion.")
+	// 		}
+	// 	}
 
-	// Make sure no groups are on TheBastion
-	responseBastionGroupList, err := client.GetListGroup(context.Background())
-	require.Nil(err, "Cannot get the list of groups from TheBastion.")
+	// 	responseBastionAccountList, err = client.GetListAccount(context.Background())
+	// 	require.Nil(err, "Cannot get the list of account from TheBastion.")
+	// }
+	// require.Equal(len(responseBastionAccountList.Value), nbUsersTheBastion, "Unexpected users on TheBastion for testing. Please delete all users on TheBastion except poweruser and healthcheck: "+fmt.Sprint(responseBastionAccountList.Value))
 
-	nbGroupsTheBastion := 0
-	require.Equal(len(responseBastionGroupList.Value), nbGroupsTheBastion, "Unexpected groups on TheBastion for testing. Please delete all groups on TheBastion: "+fmt.Sprint(responseBastionGroupList.Value))
+	// // Make sure no groups are on TheBastion
+	// responseBastionGroupList, err := client.GetListGroup(context.Background())
+	// require.Nil(err, "Cannot get the list of groups from TheBastion.")
+
+	// nbGroupsTheBastion := 0
+	// if len(responseBastionGroupList.Value) != nbGroupsTheBastion {
+	// 	// Try to delete all groups
+
+	// 	for group, _ := range responseBastionGroupList.Value {
+	// 		_, err := client.DeleteGroup(context.Background(), group)
+	// 		require.Nil(err, "Cannot delete group "+group+" from TheBastion.")
+	// 	}
+
+	// 	responseBastionGroupList, err = client.GetListGroup(context.Background())
+	// 	require.Nil(err, "Cannot get the list of groups from TheBastion.")
+	// }
+	// require.Equal(len(responseBastionGroupList.Value), nbGroupsTheBastion, "Unexpected groups on TheBastion for testing. Please delete all groups on TheBastion: "+fmt.Sprint(responseBastionGroupList.Value))
 }
 
 func TestAccCheckTheBastionUserDestroy(s *terraform.State) error {

@@ -2,6 +2,8 @@ package groups
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"terraform-provider-thebastion/thebastion/clients"
 
 	"github.com/hashicorp/go-uuid"
@@ -22,21 +24,14 @@ type groupModel struct {
 	Owner   types.String  `tfsdk:"owner"`
 	Algo    types.String  `tfsdk:"algo"`
 	Size    types.Int64   `tfsdk:"size"`
-	Servers []serverModel `tfsdk:"servers"`
+	Servers []ServerModel `tfsdk:"servers"`
 }
 
-type Server struct {
-	Host    string
-	User    string
-	Port    int64
-	Comment string
-}
-
-type serverModel struct {
-	Host    types.String `tfsdk:"host"`
-	User    types.String `tfsdk:"user"`
-	Port    types.Int64  `tfsdk:"port"`
-	Comment types.String `tfsdk:"comment"`
+type ServerModel struct {
+	Host        types.String `tfsdk:"host"`
+	User        types.String `tfsdk:"user"`
+	Port        types.Int64  `tfsdk:"port"`
+	UserComment types.String `tfsdk:"user_comment"`
 }
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -104,7 +99,7 @@ func (group groupResource) Schema(ctx context.Context, req resource.SchemaReques
 							Description: "Port of the server",
 							Required:    true,
 						},
-						"comment": schema.StringAttribute{
+						"user_comment": schema.StringAttribute{
 							Description: "Comment of the server",
 							Required:    true,
 						},
@@ -120,19 +115,15 @@ func (group groupResource) Schema(ctx context.Context, req resource.SchemaReques
 func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	plan := groupModel{}
 
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	name := plan.Name.String()
-	owner := plan.Owner.String()
-	algo := plan.Algo.String()
-	size := plan.Size.ValueInt64()
+	name, owner, algo, size := plan.Name.String(), plan.Owner.String(), plan.Algo.String(), plan.Size.ValueInt64()
 	servers := plan.Servers
 
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -141,40 +132,29 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 	_, err := r.client.CreateGroup(ctx, name, owner, algo, size)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error while creating group",
-			err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while creating group: %s", err.Error()),
 		)
 		return
 	}
 
 	// Add servers to the group
 	for _, server := range servers {
-		_, err := r.client.AddServerToGroup(ctx, name, server.Host.String(), server.User.String(), server.Port.ValueInt64(), server.Comment.String())
+		_, err := r.client.AddServerToGroup(ctx, name, server.Host.String(), server.User.String(), server.Port.ValueInt64(), server.UserComment.String())
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error while adding server to group",
-				err.Error(),
+				"Client Error",
+				fmt.Sprintf("Error while adding server to group: %s", err.Error()),
 			)
 			return
 		}
 	}
 
-	planIDString, err := uuid.GenerateUUID()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error generating id",
-			"Could not create id for testing: "+err.Error(),
-		)
-		return
-	}
-	plan.ID = types.StringValue(planIDString)
+	uuid, _ := uuid.GenerateUUID()
+	plan.ID = types.StringValue(uuid)
 
 	// Set state to the resource
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 // Read refreshes the Terraform state with the latest data.
@@ -182,8 +162,7 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	// Get current state
 	state := groupModel{}
 
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -191,21 +170,17 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	groups, err := r.client.GetListGroup(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error while reading groups",
-			err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while reading groups: %s", err.Error()),
 		)
 		return
 	}
 
 	// Check if group in groups keys
 	if _, ok := groups.Value[state.Name.ValueString()]; !ok {
-		groups_str := ""
-		for key := range groups.Value {
-			groups_str += key + " "
-		}
 		resp.Diagnostics.AddError(
-			"Error while reading group",
-			"Group not found: "+state.Name.String()+" in "+groups_str,
+			"Client Error",
+			fmt.Sprintf("Group %s not found", state.Name.ValueString()),
 		)
 		return
 	}
@@ -213,8 +188,8 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	groupInfo, err := r.client.GetGroupInfo(ctx, state.Name.String())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error while reading group info",
-			err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while reading group info: %s", err.Error()),
 		)
 		return
 	}
@@ -223,8 +198,8 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	servers, err := r.client.GetListServer(ctx, state.Name.String())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error while reading servers of group",
-			err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while reading servers of group: %s", err.Error()),
 		)
 		return
 	}
@@ -238,35 +213,110 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		break
 	}
 
+	state.Servers = []ServerModel{}
 	for _, server := range servers.Value {
-		state.Servers = append(state.Servers, serverModel{
-			Host:    types.StringValue(server.Ip),
-			User:    types.StringValue(server.User),
-			Port:    types.Int64Value(server.Port),
-			Comment: types.StringValue(server.Comment),
+		port, err := strconv.ParseInt(server.Port, 10, 64)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Client Error",
+				fmt.Sprintf("Error while parsing port: %s", err.Error()),
+			)
+			return
+		}
+		state.Servers = append(state.Servers, ServerModel{
+			Host:        types.StringValue(server.IP),
+			User:        types.StringValue(server.User),
+			Port:        types.Int64Value(port),
+			UserComment: types.StringValue(server.UserComment),
 		})
 	}
 
-	stateIDString, err := uuid.GenerateUUID()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error generating id",
-			"Could not create id for testing: "+err.Error(),
-		)
-		return
-	}
-	state.ID = types.StringValue(stateIDString)
+	uuid, _ := uuid.GenerateUUID()
+	state.ID = types.StringValue(uuid)
 
 	// Set state to the resource
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *groupResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	plan, state := groupModel{}, groupModel{}
+
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Remove servers from the group that are not in the plan
+	servers, err := r.client.GetListServer(ctx, state.Name.String())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Client Error",
+			fmt.Sprintf("Error while reading servers of group: %s", err.Error()),
+		)
+		return
+	}
+
+	for _, server := range servers.Value {
+		found := false
+		for _, planServer := range plan.Servers {
+			if server.IP == planServer.Host.String() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			port, err := strconv.ParseInt(server.Port, 10, 64)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Client Error",
+					fmt.Sprintf("Error while parsing port: %s", err.Error()),
+				)
+				return
+			}
+			_, err = r.client.DeleteServerFromGroup(ctx, state.Name.String(), server.IP, server.User, port)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Client Error",
+					fmt.Sprintf("Error while deleting server from group: %s", err.Error()),
+				)
+				return
+			}
+		}
+	}
+
+	// Update the servers of the group
+	for _, server := range plan.Servers {
+		_, err = r.client.AddServerToGroup(ctx, state.Name.String(), server.Host.String(), server.User.String(), server.Port.ValueInt64(), server.UserComment.String())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Client Error",
+				fmt.Sprintf("Error while adding server to group: %s", err.Error()),
+			)
+			return
+		}
+	}
+
+	// Overwrite items with refreshed state
+
+	// Set refreshed state
+
+	// Set state to the resource
+
+	uuid, _ := uuid.GenerateUUID()
+	plan.ID = types.StringValue(uuid)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -283,8 +333,8 @@ func (r *groupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	_, err := r.client.DeleteGroup(ctx, state.Name.String())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error while destroying group",
-			err.Error(),
+			"Client Error",
+			fmt.Sprintf("Error while deleting group: %s", err.Error()),
 		)
 		return
 	}

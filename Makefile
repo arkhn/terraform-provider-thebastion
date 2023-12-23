@@ -3,6 +3,7 @@ GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
 BINARY=terraform-provider-thebastion
 VERSION=0.1.0
 OS_ARCH=darwin_amd64
+include .env
 
 .PHONY: build release generate install test tools lint depscheck fmt fmtcheck vet testacc
 
@@ -72,6 +73,8 @@ vet:
 	fi
 
 testacc: fmtcheck
+	docker compose -f docker-compose.test.yaml down
+	docker compose -f docker-compose.test.yaml up -d
 	TF_ACC=1 go test -count=1 -parallel=1 -timeout 10m -coverprofile=cover.out -v ./...
 
 cover:
