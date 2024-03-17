@@ -48,3 +48,6 @@ terraform
 # Ignore all log file from example
 examples/**/*.txt
 cover.out
+
+# Ignore .env file
+.env

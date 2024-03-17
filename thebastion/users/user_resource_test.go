@@ -67,7 +67,7 @@ func TestAccTheBastionUser_update_ingress_keys(t *testing.T) {
 			{
 				Config:  tests.TestAccTheBastionUserResource(resourceName, rUid, name, ingress_keys_update),
 				Check:   tests.TestAccCheckTheBastionUserValues("thebastion_user."+resourceName, fmt.Sprint(rUid), name, "1", ingress_keys_update),
-				Destroy: true,
+				Destroy: false,
 			},
 		},
 	})
@@ -100,7 +100,7 @@ func TestAccTheBastionUser_update_name(t *testing.T) {
 			{
 				Config:  tests.TestAccTheBastionUserResource(resourceName, rUid, nameUpdate, ingress_keys),
 				Check:   tests.TestAccCheckTheBastionUserValues("thebastion_user."+resourceName, fmt.Sprint(rUid), nameUpdate, "1", ingress_keys),
-				Destroy: true,
+				Destroy: false,
 			},
 		},
 	})

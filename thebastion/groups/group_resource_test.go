@@ -2,7 +2,7 @@ package groups_test
 
 import (
 	"terraform-provider-thebastion/thebastion"
-	"terraform-provider-thebastion/thebastion/groups"
+	"terraform-provider-thebastion/thebastion/clients"
 	"terraform-provider-thebastion/thebastion/tests"
 	"testing"
 
@@ -16,7 +16,7 @@ import (
 func TestAccTheBastionGroup_basic(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
-	owner := "poweruser"
+	owners := []string{"poweruser"}
 	algo := "rsa"
 	size := 2048
 
@@ -25,7 +25,7 @@ func TestAccTheBastionGroup_basic(t *testing.T) {
 	server1_user := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	server1_user_comment := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
-	server1 := groups.ServerModel{
+	server1 := clients.ServerModel{
 		Host:        types.StringValue(server1_host),
 		Port:        types.Int64Value(server1_port),
 		User:        types.StringValue(server1_user),
@@ -42,8 +42,8 @@ func TestAccTheBastionGroup_basic(t *testing.T) {
 		CheckDestroy: tests.TestAccCheckTheBastionGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:  tests.TestAccTheBastionGroupResource(resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
-				Check:   tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
+				Config:  tests.TestAccTheBastionGroupResource(resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
+				Check:   tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
 				Destroy: false,
 			},
 		},
@@ -53,7 +53,7 @@ func TestAccTheBastionGroup_basic(t *testing.T) {
 func TestAccTheBastionGroup_multiple_servers(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
-	owner := "poweruser"
+	owners := []string{"poweruser"}
 	algo := "rsa"
 	size := 2048
 
@@ -67,14 +67,14 @@ func TestAccTheBastionGroup_multiple_servers(t *testing.T) {
 	server2_user := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	server2_user_comment := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
-	server1 := groups.ServerModel{
+	server1 := clients.ServerModel{
 		Host:        types.StringValue(server1_host),
 		Port:        types.Int64Value(server1_port),
 		User:        types.StringValue(server1_user),
 		UserComment: types.StringValue(server1_user_comment),
 	}
 
-	server2 := groups.ServerModel{
+	server2 := clients.ServerModel{
 		Host:        types.StringValue(server2_host),
 		Port:        types.Int64Value(server2_port),
 		User:        types.StringValue(server2_user),
@@ -91,8 +91,8 @@ func TestAccTheBastionGroup_multiple_servers(t *testing.T) {
 		CheckDestroy: tests.TestAccCheckTheBastionGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:  tests.TestAccTheBastionGroupResource(resourceName, name, owner, algo, size, []groups.ServerModel{server1, server2}),
-				Check:   tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner, algo, size, []groups.ServerModel{server1, server2}),
+				Config:  tests.TestAccTheBastionGroupResource(resourceName, name, owners, algo, size, []clients.ServerModel{server1, server2}),
+				Check:   tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners, algo, size, []clients.ServerModel{server1, server2}),
 				Destroy: false,
 			},
 		},
@@ -102,7 +102,7 @@ func TestAccTheBastionGroup_multiple_servers(t *testing.T) {
 func TestAccTheBastionGroup_update_servers(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
-	owner := "poweruser"
+	owners := []string{"poweruser"}
 	algo := "rsa"
 	size := 2048
 
@@ -116,14 +116,14 @@ func TestAccTheBastionGroup_update_servers(t *testing.T) {
 	server2_user := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	server2_user_comment := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
-	server1 := groups.ServerModel{
+	server1 := clients.ServerModel{
 		Host:        types.StringValue(server1_host),
 		Port:        types.Int64Value(server1_port),
 		User:        types.StringValue(server1_user),
 		UserComment: types.StringValue(server1_user_comment),
 	}
 
-	server2 := groups.ServerModel{
+	server2 := clients.ServerModel{
 		Host:        types.StringValue(server2_host),
 		Port:        types.Int64Value(server2_port),
 		User:        types.StringValue(server2_user),
@@ -141,12 +141,12 @@ func TestAccTheBastionGroup_update_servers(t *testing.T) {
 		CheckDestroy: tests.TestAccCheckTheBastionGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
-				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
+				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
+				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
 			},
 			{
-				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owner, algo, size, []groups.ServerModel{server2}),
-				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner, algo, size, []groups.ServerModel{server2}),
+				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owners, algo, size, []clients.ServerModel{server2}),
+				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners, algo, size, []clients.ServerModel{server2}),
 			},
 		},
 	})
@@ -155,7 +155,7 @@ func TestAccTheBastionGroup_update_servers(t *testing.T) {
 func TestAccTheBastionGroup_update_name(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
-	owner := "poweruser"
+	owners := []string{"poweruser"}
 	algo := "rsa"
 	size := 2048
 
@@ -164,7 +164,7 @@ func TestAccTheBastionGroup_update_name(t *testing.T) {
 	server1_user := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	server1_user_comment := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
-	server1 := groups.ServerModel{
+	server1 := clients.ServerModel{
 		Host:        types.StringValue(server1_host),
 		Port:        types.Int64Value(server1_port),
 		User:        types.StringValue(server1_user),
@@ -182,12 +182,12 @@ func TestAccTheBastionGroup_update_name(t *testing.T) {
 		CheckDestroy: tests.TestAccCheckTheBastionGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
-				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
+				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
+				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
 			},
 			{
-				Config: tests.TestAccTheBastionGroupResource(resourceName, name+"-updated", owner, algo, size, []groups.ServerModel{server1}),
-				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name+"-updated", owner, algo, size, []groups.ServerModel{server1}),
+				Config: tests.TestAccTheBastionGroupResource(resourceName, name+"-updated", owners, algo, size, []clients.ServerModel{server1}),
+				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name+"-updated", owners, algo, size, []clients.ServerModel{server1}),
 			},
 		},
 	})
@@ -196,8 +196,8 @@ func TestAccTheBastionGroup_update_name(t *testing.T) {
 func TestAccTheBastionGroup_update_owner(t *testing.T) {
 	resourceName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
-	owner := "poweruser"
-	owner_updated := "healthcheck"
+	owners := []string{"poweruser"}
+	owners_updated := []string{"healthcheck"}
 	algo := "rsa"
 	size := 2048
 
@@ -206,7 +206,7 @@ func TestAccTheBastionGroup_update_owner(t *testing.T) {
 	server1_user := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	server1_user_comment := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
-	server1 := groups.ServerModel{
+	server1 := clients.ServerModel{
 		Host:        types.StringValue(server1_host),
 		Port:        types.Int64Value(server1_port),
 		User:        types.StringValue(server1_user),
@@ -225,12 +225,12 @@ func TestAccTheBastionGroup_update_owner(t *testing.T) {
 
 		Steps: []resource.TestStep{
 			{
-				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
-				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner, algo, size, []groups.ServerModel{server1}),
+				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
+				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners, algo, size, []clients.ServerModel{server1}),
 			},
 			{
-				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owner_updated, algo, size, []groups.ServerModel{server1}),
-				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owner_updated, algo, size, []groups.ServerModel{server1}),
+				Config: tests.TestAccTheBastionGroupResource(resourceName, name, owners_updated, algo, size, []clients.ServerModel{server1}),
+				Check:  tests.TestAccCheckTheBastionGroupValues("thebastion_group."+resourceName, name, owners_updated, algo, size, []clients.ServerModel{server1}),
 			},
 		},
 	})

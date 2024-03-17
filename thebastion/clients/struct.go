@@ -1,5 +1,9 @@
 package clients
 
+import (
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
 type ResponseBastion struct {
 	ErrorMessage string      `json:"error_message"`
 	ErrorCode    string      `json:"error_code"`
@@ -173,4 +177,11 @@ type ResponseBastionGroupInfo struct {
 		Aclkeepers     []string `json:"aclkeepers"`
 		PartialMembers []string `json:"partial_members"`
 	} `json:"value"`
+}
+
+type ServerModel struct {
+	Host        types.String `tfsdk:"host"`
+	User        types.String `tfsdk:"user"`
+	Port        types.Int64  `tfsdk:"port"`
+	UserComment types.String `tfsdk:"user_comment"`
 }

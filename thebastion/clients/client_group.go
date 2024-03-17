@@ -29,12 +29,21 @@ func (c *Client) GetListGroup(ctx context.Context) (*ResponseBastionGroupList, e
 	return &responseBastionGroupList, nil
 }
 
-// Cannot create a group encrypted yet
-func (c *Client) CreateGroup(ctx context.Context, groupName, owner, algo string, size int64) (*ResponseBastionCreateGroup, error) {
-	command := fmt.Sprintf("--osh groupCreate --group %s --owner %s --algo %s --size %s --json", groupName, owner, algo, fmt.Sprint(size))
+// Create a group
+// TODO: add encryption
+func (c *Client) CreateGroup(ctx context.Context, groupName string, owners []string, algo string, size int64) (*ResponseBastionCreateGroup, error) {
+	command := fmt.Sprintf("--osh groupCreate --group %s --owner %s --algo %s --size %s --json", groupName, owners[0], algo, fmt.Sprint(size))
 	responseBastion, err := c.SendCommandBastion(ctx, command)
 	if err != nil {
 		return nil, err
+	}
+
+	// Add other owners
+	for _, owner := range owners[1:] {
+		_, err := c.AddOwnerToGroup(ctx, groupName, owner)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// map to struct
@@ -52,6 +61,7 @@ func (c *Client) CreateGroup(ctx context.Context, groupName, owner, algo string,
 	return &responseBastionCreateGroup, nil
 }
 
+// Delete a group
 func (c *Client) DeleteGroup(ctx context.Context, groupName string) (*ResponseBastion, error) {
 	command := fmt.Sprintf("--osh groupDelete --group %s --no-confirm --json", groupName)
 	responseBastion, err := c.SendCommandBastion(ctx, command)
@@ -217,4 +227,63 @@ func (c *Client) DeleteOwnerFromGroup(ctx context.Context, groupName string, own
 	}
 
 	return &responseBastionDeleteOwnerFromGroup, nil
+}
+
+// Update servers from a group
+func (c *Client) UpdateServerFromGroup(ctx context.Context, name string, planServers []ServerModel, stateServers []ServerModel) (*ResponseBastionListServer, error) {
+	// Remove servers from the group that are not in the plan
+	for _, server := range stateServers {
+		found := false
+		for _, planServer := range planServers {
+			if server.Host.String() == planServer.Host.String() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			_, err := c.DeleteServerFromGroup(ctx, name, server.Host.String(), server.User.String(), server.Port.ValueInt64())
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Add servers to the group that are not in the state
+	for _, server := range planServers {
+		_, err := c.AddServerToGroup(ctx, name, server.Host.String(), server.User.String(), server.Port.ValueInt64(), server.UserComment.String())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return c.GetListServer(ctx, name)
+}
+
+func (c *Client) UpdateOwnerFromGroup(ctx context.Context, name string, planOwners []string, stateOwners []string) (*ResponseBastionGroupInfo, error) {
+	// Remove owners from the group that are not in the plan
+	for _, owner := range stateOwners {
+		found := false
+		for _, planOwner := range planOwners {
+			if owner == planOwner {
+				found = true
+				break
+			}
+		}
+		if !found {
+			_, err := c.DeleteOwnerFromGroup(ctx, name, owner)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Add owners to the group that are not in the state
+	for _, owner := range planOwners {
+		_, err := c.AddOwnerToGroup(ctx, name, owner)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return c.GetGroupInfo(ctx, name)
 }

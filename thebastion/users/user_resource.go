@@ -87,7 +87,6 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Description: "List of ingress keys of users.",
 				Required:    true,
 				ElementType: types.StringType,
-				// Make sure len(list) >= 1
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -228,6 +227,10 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// Generate API request body from plan
 	name := plan.Name.ValueString()
 	planIngressKeys, stateIngressKeys := []string{}, []string{}
+	for _, key := range plan.Ingress_keys.Elements() {
+		planIngressKeys = append(planIngressKeys, key.String())
+	}
+
 	resp.Diagnostics.Append(plan.Ingress_keys.ElementsAs(ctx, &planIngressKeys, true)...)
 	if resp.Diagnostics.HasError() {
 		return

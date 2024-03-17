@@ -75,7 +75,7 @@ vet:
 testacc: fmtcheck
 	docker compose -f docker-compose.test.yaml down
 	docker compose -f docker-compose.test.yaml up -d
-	TF_ACC=1 go test -count=1 -parallel=1 -timeout 10m -coverprofile=cover.out -v ./...
+	TF_ACC=1 go test -count=1 -parallel=4 -timeout 10m -coverprofile=cover.out -v ./...
 
 cover:
 	@echo "==> Search coverprofile file..."

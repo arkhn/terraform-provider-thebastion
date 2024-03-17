@@ -7,9 +7,14 @@ import (
 	"terraform-provider-thebastion/thebastion/clients"
 
 	"github.com/hashicorp/go-uuid"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -19,19 +24,12 @@ type groupResource struct {
 }
 
 type groupModel struct {
-	ID      types.String  `tfsdk:"id"`
-	Name    types.String  `tfsdk:"name"`
-	Owner   types.String  `tfsdk:"owner"`
-	Algo    types.String  `tfsdk:"algo"`
-	Size    types.Int64   `tfsdk:"size"`
-	Servers []ServerModel `tfsdk:"servers"`
-}
-
-type ServerModel struct {
-	Host        types.String `tfsdk:"host"`
-	User        types.String `tfsdk:"user"`
-	Port        types.Int64  `tfsdk:"port"`
-	UserComment types.String `tfsdk:"user_comment"`
+	ID      types.String          `tfsdk:"id"`
+	Name    types.String          `tfsdk:"name"`
+	Owners  []types.String        `tfsdk:"owners"`
+	Algo    types.String          `tfsdk:"algo"`
+	Size    types.Int64           `tfsdk:"size"`
+	Servers []clients.ServerModel `tfsdk:"servers"`
 }
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -70,18 +68,31 @@ func (group groupResource) Schema(ctx context.Context, req resource.SchemaReques
 			"name": schema.StringAttribute{
 				Description: "Name of the group",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
-			"owner": schema.StringAttribute{
-				Description: "Owner of the group",
+			"owners": schema.ListAttribute{
+				Description: "List of owners",
+				ElementType: types.StringType,
 				Required:    true,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
 			},
 			"algo": schema.StringAttribute{
 				Description: "Algorithm used to generate the key",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"size": schema.Int64Attribute{
 				Description: "Size of the key",
 				Required:    true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"servers": schema.ListNestedAttribute{
 				Description: "List of servers",
@@ -120,7 +131,12 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	name, owner, algo, size := plan.Name.String(), plan.Owner.String(), plan.Algo.String(), plan.Size.ValueInt64()
+	name, algo, size := plan.Name.String(), plan.Algo.String(), plan.Size.ValueInt64()
+	owners := []string{}
+	for _, owner := range plan.Owners {
+		owners = append(owners, owner.String())
+	}
+
 	servers := plan.Servers
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -129,7 +145,7 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the group
-	_, err := r.client.CreateGroup(ctx, name, owner, algo, size)
+	_, err := r.client.CreateGroup(ctx, name, owners, algo, size)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Client Error",
@@ -206,14 +222,17 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	// Overwrite state with the latest data
 	state.Name = types.StringValue(groupInfo.Value.Group)
-	state.Owner = types.StringValue(groupInfo.Value.Owners[0])
+	state.Owners = []types.String{}
+	for _, owner := range groupInfo.Value.Owners {
+		state.Owners = append(state.Owners, types.StringValue(owner))
+	}
 	for _, key := range groupInfo.Value.Keys {
 		state.Algo = types.StringValue(key.Typecode)
 		state.Size = types.Int64Value(key.Size)
 		break
 	}
 
-	state.Servers = []ServerModel{}
+	state.Servers = []clients.ServerModel{}
 	for _, server := range servers.Value {
 		port, err := strconv.ParseInt(server.Port, 10, 64)
 		if err != nil {
@@ -223,7 +242,7 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			)
 			return
 		}
-		state.Servers = append(state.Servers, ServerModel{
+		state.Servers = append(state.Servers, clients.ServerModel{
 			Host:        types.StringValue(server.IP),
 			User:        types.StringValue(server.User),
 			Port:        types.Int64Value(port),
@@ -254,61 +273,46 @@ func (r *groupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	// Remove servers from the group that are not in the plan
-	servers, err := r.client.GetListServer(ctx, state.Name.String())
+	// Update servers of the group
+	servers, err := r.client.UpdateServerFromGroup(ctx, state.Name.String(), plan.Servers, state.Servers)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Client Error",
-			fmt.Sprintf("Error while reading servers of group: %s", err.Error()),
+			fmt.Sprintf("Error while updating servers of group: %s", err.Error()),
 		)
 		return
 	}
 
-	for _, server := range servers.Value {
-		found := false
-		for _, planServer := range plan.Servers {
-			if server.IP == planServer.Host.String() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			port, err := strconv.ParseInt(server.Port, 10, 64)
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Client Error",
-					fmt.Sprintf("Error while parsing port: %s", err.Error()),
-				)
-				return
-			}
-			_, err = r.client.DeleteServerFromGroup(ctx, state.Name.String(), server.IP, server.User, port)
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Client Error",
-					fmt.Sprintf("Error while deleting server from group: %s", err.Error()),
-				)
-				return
-			}
-		}
+	planOwners := []string{}
+	for _, owner := range plan.Owners {
+		planOwners = append(planOwners, owner.String())
 	}
 
-	// Update the servers of the group
-	for _, server := range plan.Servers {
-		_, err = r.client.AddServerToGroup(ctx, state.Name.String(), server.Host.String(), server.User.String(), server.Port.ValueInt64(), server.UserComment.String())
+	stateOwners := []string{}
+	for _, owner := range state.Owners {
+		stateOwners = append(stateOwners, owner.String())
+	}
+	// Update owners of the group
+	_, err = r.client.UpdateOwnerFromGroup(ctx, state.Name.String(), planOwners, stateOwners)
+
+	// Overwrite state with the latest data
+	state.Servers = []clients.ServerModel{}
+	for _, server := range servers.Value {
+		port, err := strconv.ParseInt(server.Port, 10, 64)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Client Error",
-				fmt.Sprintf("Error while adding server to group: %s", err.Error()),
+				fmt.Sprintf("Error while parsing port: %s", err.Error()),
 			)
 			return
 		}
+		state.Servers = append(state.Servers, clients.ServerModel{
+			Host:        types.StringValue(server.IP),
+			User:        types.StringValue(server.User),
+			Port:        types.Int64Value(port),
+			UserComment: types.StringValue(server.UserComment),
+		})
 	}
-
-	// Overwrite items with refreshed state
-
-	// Set refreshed state
-
-	// Set state to the resource
 
 	uuid, _ := uuid.GenerateUUID()
 	plan.ID = types.StringValue(uuid)
